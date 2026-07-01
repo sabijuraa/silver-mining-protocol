@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  SOLANA_VERSION: "3.0.13"
+  ANCHOR_VERSION: "0.31.0"
+  NODE_VERSION: "18"
+  RUST_TOOLCHAIN: stable
+
+jobs:
+  #  Job 1: Rust lint (fast  runs in ~2 min) ─────────────────────────────
+  lint:
+    name: Rust fmt + Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts
+
+      - name: Check formatting
+        working-directory: contracts
+        run: cargo fmt --all -- --check
+
+      - name: Clippy (deny warnings)
+        working-directory: contracts
+        run: cargo clippy --all-targets -- -D warnings
+
+  # ─ Job 2: Anchor build (slow  Solana toolchain install cached) ──────────
+  build:
+    name: Anchor build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Solana toolchain
+        uses: actions/cache@v4
+        id: cache-solana
+        with:
+          path: |
+            ~/.local/share/solana
+            ~/.config/solana
+          key: solana-${{ env.SOLANA_VERSION }}
+
+      - name: Install Solana CLI
+        if: steps.cache-solana.outputs.cache-hit != 'true'
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Add Solana to PATH (cache hit)
+        if: steps.cache-solana.outputs.cache-hit == 'true'
+        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Cache AVM + Anchor
+        uses: actions/cache@v4
+        id: cache-anchor
+        with:
+          path: |
+            ~/.avm
+            ~/.cargo/bin/anchor
+            ~/.cargo/bin/avm
+          key: anchor-${{ env.ANCHOR_VERSION }}
+
+      - name: Install Anchor via AVM
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor avm --locked
+          avm install ${{ env.ANCHOR_VERSION }}
+          avm use ${{ env.ANCHOR_VERSION }}
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts
+
+      - name: Build program
+        working-directory: contracts
+        run: anchor build
+
+  #  Job 3: Frontend (fast Node + npm cache) ─────────────────────────────
+  frontend:
+    name: Frontend build + type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: TypeScript type-check
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
