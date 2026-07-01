@@ -1,0 +1,19 @@
+# Anchor / Rust build artifacts
+contracts/target/
+contracts/.anchor/
+contracts/programs/silver_mining/idl/
+
+# Environment 
+.env
+*.json.bak
+deployer-keypair.json
+*-keypair.json
+
+# Frontend build
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+
+# OS
+.DS_Store
+Thumbs.db
