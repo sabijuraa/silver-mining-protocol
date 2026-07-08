@@ -1,6 +1,6 @@
 # Silver Mining Protocol
 
-A decentralised prediction game on Solana. Every 30 seconds a round opens —
+A decentralised prediction game on Solana. Every 30 seconds a round opens 
 players stake SOL on one of five blocks, a pseudo-random function determines
 the winner, and the winning block's stakers share 89% of the pot. Winning
 bettors earn UNREFINED tokens scaled by mine level, which refine into SILVER
@@ -44,7 +44,7 @@ wallet takes all.
 
 **AutoMiner:** pre-deposit SOL into a PDA. Any third-party cranker executes
 your bet each round and receives the Bet account rent + a small tip.
-Your SOL stays non-custodial — only you can withdraw it.
+Your SOL stays non-custodial  only you can withdraw it.
 
 ---
 
@@ -103,16 +103,16 @@ by a single party.
 
 **Crank-based AutoMiner.** Users pre-deposit SOL into a PDA. Third-party
 bots execute bets each round and are reimbursed from the AutoMiner balance.
-The cranker can only trigger a bet — they cannot withdraw the balance.
+The cranker can only trigger a bet  they cannot withdraw the balance.
 See [ADR-0004](docs/adr/0004-crank-autominer-model.md).
 
 **Two-token model.** UNREFINED is the high-emission participation reward.
-SILVER is the refined store of value — lower supply, stakeable. The 10%
+SILVER is the refined store of value  lower supply, stakeable. The 10%
 redistribution on refining creates passive yield for existing UNREFINED
 holders without new SILVER inflation. See [ADR-0002](docs/adr/0002-two-token-model.md).
 
 **Pseudo-random finalization.** Block outcomes use FNV-1a over
-`slot + timestamp + round_number`. This is not a VRF — a validator producing
+`slot + timestamp + round_number`. This is not a VRF  a validator producing
 the finalization slot has partial influence over the outcome. At current bet
 sizes the economic incentive to manipulate is negligible. This is documented
 honestly, not hidden. See [ADR-0001](docs/adr/0001-pseudo-random-over-vrf.md)
@@ -156,16 +156,14 @@ docs/
 ## Security
 
 **Not audited.** This protocol ran on Solana mainnet with real user funds
-from February to June 2026. It has not been formally audited by a third party.
-
+from February to June 2026.
 **Randomness.** Block outcomes are pseudo-random, not provably fair. See
 the [randomness threat model](docs/threat-model/randomness.md) for the
 full attack analysis and why it was accepted for this scale.
 
 **Admin capabilities.** The authority key can pause the protocol, update
 staking APR, and mint up to 50,000 SILVER (hard-capped on-chain). It cannot
-drain user Round PDAs or AutoMiner balances. See
-[admin risk](docs/threat-model/admin-risk.md).
+drain user Round PDAs or AutoMiner balances.
 
 **Non-custodial.** User SOL flows directly to Round PDAs and back to winners.
 The program never holds user betting funds in a centrally controlled wallet.
